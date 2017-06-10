@@ -1,15 +1,17 @@
 package protobuf
 
 import (
+	"bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
 	"reflect"
 
+	"github.com/QuinShuai/leaf/chanrpc"
+	"github.com/QuinShuai/leaf/log"
 	"github.com/golang/protobuf/proto"
-	"github.com/name5566/leaf/chanrpc"
-	"github.com/name5566/leaf/log"
 )
 
 // -------------------------
@@ -172,6 +174,20 @@ func (p *Processor) Marshal(msg interface{}) ([][]byte, error) {
 
 	// data
 	data, err := proto.Marshal(msg.(proto.Message))
+
+	if _id == 0xb0009 {
+		fmt.Println("压缩前数据大小:", len(data))
+		fmt.Println("压缩前数据:", data)
+
+		var in bytes.Buffer
+		w := zlib.NewWriter(&in)
+		w.Write(data)
+		w.Close()
+
+		fmt.Println("压缩后数据大小:", len(in.Bytes()))
+		fmt.Println("压缩后数据:", in.Bytes())
+	}
+
 	return [][]byte{id, data}, err
 }
 
