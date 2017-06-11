@@ -2,12 +2,13 @@ package protobuf
 
 import (
 	"bytes"
-	"compress/zlib"
+	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 
 	"github.com/QuinShuai/leaf/chanrpc"
 	"github.com/QuinShuai/leaf/log"
@@ -175,17 +176,16 @@ func (p *Processor) Marshal(msg interface{}) ([][]byte, error) {
 	// data
 	data, err := proto.Marshal(msg.(proto.Message))
 
-	if _id == 0xb0009 {
+	if strings.Contains(msgType.String(), "Gzip") {
 		fmt.Println("压缩前数据大小:", len(data))
-		fmt.Println("压缩前数据:", data)
 
 		var in bytes.Buffer
-		w := zlib.NewWriter(&in)
+		w := gzip.NewWriter(&in)
 		w.Write(data)
 		w.Close()
 
 		fmt.Println("压缩后数据大小:", len(in.Bytes()))
-		fmt.Println("压缩后数据:", in.Bytes())
+		data = in.Bytes()
 	}
 
 	return [][]byte{id, data}, err
