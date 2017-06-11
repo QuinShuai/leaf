@@ -22,6 +22,8 @@ type Processor struct {
 	littleEndian bool
 	msgInfo      map[uint32]*MsgInfo
 	msgID        map[reflect.Type]uint32
+	lastMsg      interface{}
+	lastMsgData  []byte
 }
 
 type MsgInfo struct {
@@ -177,15 +179,21 @@ func (p *Processor) Marshal(msg interface{}) ([][]byte, error) {
 	data, err := proto.Marshal(msg.(proto.Message))
 
 	if strings.Contains(msgType.String(), "Gzip") {
-		fmt.Println("压缩前数据大小:", len(data))
+		if p.lastMsg == msg {
+			data = p.lastMsgData
+		} else {
+			fmt.Println("压缩前数据大小:", len(data))
 
-		var in bytes.Buffer
-		w := gzip.NewWriter(&in)
-		w.Write(data)
-		w.Close()
+			var in bytes.Buffer
+			w, _ := gzip.NewWriterLevel(&in, gzip.BestSpeed)
+			w.Write(data)
+			w.Close()
 
-		fmt.Println("压缩后数据大小:", len(in.Bytes()))
-		data = in.Bytes()
+			fmt.Println("压缩后数据大小:", len(in.Bytes()))
+			data = in.Bytes()
+			p.lastMsg = msg
+			p.lastMsgData = data
+		}
 	}
 
 	return [][]byte{id, data}, err
